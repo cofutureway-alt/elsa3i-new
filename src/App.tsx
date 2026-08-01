@@ -89,6 +89,7 @@ import MyLevels from "./pages/student/MyLevels";
 import BadgeCelebration from "./components/BadgeCelebration";
 import MobileBottomNav from "./components/MobileBottomNav";
 import Books from "./pages/Books";
+import BookDetails from "./pages/BookDetails";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
@@ -125,6 +126,7 @@ const App = () => (
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route path="/books" element={<Books />} />
+            <Route path="/books/:id" element={<BookDetails />} />
             <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
             <Route path="/checkout" element={<RequireAuth><Checkout /></RequireAuth>} />
             <Route path="/order-confirmation/:id" element={<RequireAuth><OrderConfirmation /></RequireAuth>} />

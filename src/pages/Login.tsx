@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { isValidEgPhone, looksLikePhone, normalizeEgPhone, syntheticAuthEmail } from "@/lib/phone";
+import { getArabicAuthErrorMessage } from "@/lib/auth-errors";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -75,11 +76,7 @@ const Login = () => {
 
     if (error) {
       setLoading(false);
-      if (error.message.toLowerCase().includes("invalid")) {
-        toast.error("بيانات الدخول غير صحيحة");
-      } else {
-        toast.error(error.message);
-      }
+      toast.error(getArabicAuthErrorMessage(error));
       return;
     }
 

@@ -12,6 +12,7 @@ import {
   Plus,
   Upload,
   X,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,8 @@ interface FormShape {
   language: string;
   subject_id: string;
   stage_id: string;
+  stage_ids: string[];
+  subject_ids: string[];
   tags: string[];
   book_type: BookType;
   price_egp: string;
@@ -85,6 +88,8 @@ const emptyForm = (): FormShape => ({
   language: "ar",
   subject_id: "",
   stage_id: "",
+  stage_ids: [],
+  subject_ids: [],
   tags: [],
   book_type: "digital",
   price_egp: "",
@@ -194,6 +199,8 @@ export default function AdminBookEditor() {
           navigate("/admin/books");
           return;
         }
+        const sIds = b.stage_ids && b.stage_ids.length > 0 ? b.stage_ids : (b.stage_id ? [b.stage_id] : []);
+        const subIds = b.subject_ids && b.subject_ids.length > 0 ? b.subject_ids : (b.subject_id ? [b.subject_id] : []);
         setForm({
           title: b.title,
           description: b.description ?? "",
@@ -204,6 +211,8 @@ export default function AdminBookEditor() {
           language: b.language ?? "ar",
           subject_id: b.subject_id ?? "",
           stage_id: b.stage_id ?? "",
+          stage_ids: sIds,
+          subject_ids: subIds,
           tags: b.tags ?? [],
           book_type: b.book_type,
           price_egp: b.price_piastres ? String(b.price_piastres / 100) : "",
@@ -336,8 +345,10 @@ export default function AdminBookEditor() {
         publication_year: form.publication_year ? parseInt(form.publication_year, 10) : null,
         isbn: form.isbn.trim() || null,
         language: form.language || "ar",
-        subject_id: form.subject_id || null,
-        stage_id: form.stage_id || null,
+        subject_id: form.subject_ids.length > 0 ? form.subject_ids[0] : null,
+        stage_id: form.stage_ids.length > 0 ? form.stage_ids[0] : null,
+        subject_ids: form.subject_ids,
+        stage_ids: form.stage_ids,
         tags: form.tags.length ? form.tags : null,
         book_type: form.book_type,
         price_piastres: price,
@@ -539,35 +550,72 @@ export default function AdminBookEditor() {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>المادة</Label>
-            <Select
-              value={form.subject_id || "none"}
-              onValueChange={(v) => setForm({ ...form, subject_id: v === "none" ? "" : v })}
-            >
-              <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">— بدون —</SelectItem>
-                {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="md:col-span-2 space-y-2">
+            <Label className="flex items-center justify-between">
+              <span>المواد الدراسية (يمكن اختيار أكثر من مادة)</span>
+              <span className="text-xs text-muted-foreground">{form.subject_ids.length} مواد مختارة</span>
+            </Label>
+            <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-border bg-card">
+              {subjects.map((s) => {
+                const selected = form.subject_ids.includes(s.id);
+                return (
+                  <Badge
+                    key={s.id}
+                    variant={selected ? "default" : "outline"}
+                    className={`cursor-pointer gap-1.5 py-1.5 px-3 transition-all ${
+                      selected ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent"
+                    }`}
+                    onClick={() => {
+                      const next = selected
+                        ? form.subject_ids.filter((x) => x !== s.id)
+                        : [...form.subject_ids, s.id];
+                      setForm({
+                        ...form,
+                        subject_ids: next,
+                        subject_id: next.length > 0 ? next[0] : "",
+                      });
+                    }}
+                  >
+                    {selected && <Check className="w-3.5 h-3.5" />}
+                    {s.name}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
-          <div>
-            <Label>المرحلة</Label>
-            <Select
-              value={form.stage_id || "none"}
-              onValueChange={(v) => setForm({ ...form, stage_id: v === "none" ? "" : v })}
-            >
-              <SelectTrigger><SelectValue placeholder="اختياري" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">— بدون —</SelectItem>
-                {stages.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          <div className="md:col-span-2 space-y-2">
+            <Label className="flex items-center justify-between">
+              <span>المراحل الدراسية (يمكن اختيار أكثر من مرحلة)</span>
+              <span className="text-xs text-muted-foreground">{form.stage_ids.length} مراحل مختارة</span>
+            </Label>
+            <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-border bg-card">
+              {stages.map((s) => {
+                const selected = form.stage_ids.includes(s.id);
+                return (
+                  <Badge
+                    key={s.id}
+                    variant={selected ? "default" : "outline"}
+                    className={`cursor-pointer gap-1.5 py-1.5 px-3 transition-all ${
+                      selected ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent"
+                    }`}
+                    onClick={() => {
+                      const next = selected
+                        ? form.stage_ids.filter((x) => x !== s.id)
+                        : [...form.stage_ids, s.id];
+                      setForm({
+                        ...form,
+                        stage_ids: next,
+                        stage_id: next.length > 0 ? next[0] : "",
+                      });
+                    }}
+                  >
+                    {selected && <Check className="w-3.5 h-3.5" />}
+                    {s.name}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
           <div className="md:col-span-2">
             <Label>الوسوم (Tags)</Label>

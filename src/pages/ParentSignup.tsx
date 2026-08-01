@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { isValidEgPhone, normalizeEgPhone, syntheticAuthEmail } from "@/lib/phone";
+import { getArabicAuthErrorMessage } from "@/lib/auth-errors";
 
 const ParentSignup = () => {
   const navigate = useNavigate();
@@ -40,17 +41,15 @@ const ParentSignup = () => {
       },
     });
     if (error) {
-      setLoading(false);
-      const msg = error.message.toLowerCase();
-      if (msg.includes("already") || msg.includes("registered")) {
-        toast.error("هذا الحساب مسجّل بالفعل");
-      } else if (msg.includes("invalid") || msg.includes("email")) {
-        toast.error("حدث خطأ في إنشاء الحساب. تأكد من صحة البيانات وحاول مجدداً");
-      } else if (msg.includes("weak") || msg.includes("password")) {
-        toast.error("كلمة المرور ضعيفة، يرجى اختيار كلمة مرور أقوى");
-      } else {
-        toast.error("فشل إنشاء الحساب، حاول مجدداً");
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email: authEmail, password });
+      if (!signInErr) {
+        setLoading(false);
+        toast.success("تم تسجيل الدخول بنجاح");
+        navigate("/parent", { replace: true });
+        return;
       }
+      setLoading(false);
+      toast.error(getArabicAuthErrorMessage(error));
       return;
     }
     await supabase.auth.signInWithPassword({ email: authEmail, password });

@@ -14,6 +14,8 @@ import {
   Cloud,
   CheckCircle2,
   Info,
+  Lock,
+  User,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -122,14 +124,22 @@ export default function Checkout() {
     : 0;
   const total = subtotal + shippingCost;
 
-  // Pre-fill from profile
+  // Pre-fill from profile and user
   useEffect(() => {
-    if (profile) {
-      if (!fullName && profile.full_name) setFullName(profile.full_name);
-      if (!phone && profile.phone_number) setPhone(profile.phone_number);
+    if (profile || user) {
+      const userFullName = profile?.full_name || (user?.user_metadata as any)?.full_name || "";
+      const userPhone =
+        profile?.phone_number ||
+        user?.phone ||
+        (user?.user_metadata as any)?.phone ||
+        (user?.user_metadata as any)?.phone_number ||
+        "";
+
+      if (userFullName) setFullName(userFullName);
+      if (userPhone) setPhone(userPhone);
+      if (userPhone && !senderNumber) setSenderNumber(userPhone);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
+  }, [profile, user]);
 
   // Load zones, shipping default, gateways, manual methods, wallet
   useEffect(() => {
@@ -200,6 +210,17 @@ export default function Checkout() {
 
   function validate(): string | null {
     if (lines.length === 0) return "سلة الشراء فارغة";
+    for (const l of lines) {
+      if (l.book.book_type === "physical") {
+        const stock = l.book.stock_quantity ?? 0;
+        if (stock <= 0) {
+          return `الكتاب "${l.book.title}" نفد من المخزون ولا يمكن شراؤه حالياً`;
+        }
+        if (l.quantity > stock) {
+          return `الكتاب "${l.book.title}" الكمية المطلوبة (${l.quantity}) تتجاوز المخزون المتاح (${stock})`;
+        }
+      }
+    }
     if (hasPhysical) {
       if (!zoneId) return "اختر منطقة الشحن";
       if (!fullName.trim()) return "أدخل الاسم بالكامل";
@@ -328,7 +349,7 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {hasPhysical && (
+            {hasPhysical ? (
               <Card className="p-5 space-y-4">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-primary" />
@@ -340,12 +361,19 @@ export default function Checkout() {
                     <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>رقم الهاتف</Label>
+                    <Label className="flex items-center justify-between">
+                      <span>رقم الهاتف</span>
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-primary" /> مسجل بحسابك (غير قابل للتعديل)
+                      </span>
+                    </Label>
                     <Input
                       inputMode="tel"
                       dir="ltr"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      disabled
+                      readOnly
+                      className="bg-muted font-mono cursor-not-allowed text-foreground opacity-90"
                       placeholder="01xxxxxxxxx"
                     />
                   </div>
@@ -387,6 +415,36 @@ export default function Checkout() {
                       onChange={(e) => setAddrNotes(e.target.value)}
                       rows={2}
                       placeholder="علامة مميّزة، طابق، توقيت الاستلام…"
+                    />
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  <h2 className="font-bold">بيانات المشتري</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>الاسم بالكامل</Label>
+                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="الاسم بالكامل" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center justify-between">
+                      <span>رقم الهاتف</span>
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-primary" /> مسجل بحسابك (غير قابل للتعديل)
+                      </span>
+                    </Label>
+                    <Input
+                      inputMode="tel"
+                      dir="ltr"
+                      value={phone}
+                      disabled
+                      readOnly
+                      className="bg-muted font-mono cursor-not-allowed text-foreground opacity-90"
+                      placeholder="01xxxxxxxxx"
                     />
                   </div>
                 </div>

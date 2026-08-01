@@ -15,9 +15,11 @@ import {
   BookMarked,
   Wallet,
   Tag,
+  Check,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -37,8 +39,8 @@ const schema = z
   .object({
     title: z.string().trim().min(2, "العنوان قصير جدًا").max(120),
     description: z.string().trim().max(1000).optional(),
-    stage_id: z.string().uuid("اختر مرحلة"),
-    subject_id: z.string().uuid("اختر مادة دراسية"),
+    stage_id: z.string().optional(),
+    subject_id: z.string().optional(),
     is_paid: z.boolean(),
     price_egp: z.string().optional(),
     discount_price_egp: z.string().optional(),
@@ -102,6 +104,9 @@ const CourseInfoEditor = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const existingSigned = useSignedThumbnail(existingThumb);
 
+  const [selectedStageIds, setSelectedStageIds] = useState<string[]>([]);
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
+
   const {
     register,
     handleSubmit,
@@ -157,6 +162,16 @@ const CourseInfoEditor = () => {
             navigate("/admin/courses");
             return;
           }
+          const sIds = (data as any).stage_ids && (data as any).stage_ids.length > 0
+            ? (data as any).stage_ids
+            : data.stage_id ? [data.stage_id] : [];
+          const subIds = (data as any).subject_ids && (data as any).subject_ids.length > 0
+            ? (data as any).subject_ids
+            : (data as any).subject_id ? [(data as any).subject_id] : [];
+
+          setSelectedStageIds(sIds);
+          setSelectedSubjectIds(subIds);
+
           reset({
             title: data.title,
             description: data.description ?? "",
@@ -233,14 +248,19 @@ const CourseInfoEditor = () => {
         is_featured: !!values.is_featured,
       };
 
+      const primaryStageId = selectedStageIds.length > 0 ? selectedStageIds[0] : (values.stage_id || null);
+      const primarySubjectId = selectedSubjectIds.length > 0 ? selectedSubjectIds[0] : (values.subject_id || null);
+
       if (isEdit) {
         const { error } = await (supabase as any)
           .from("courses")
           .update({
             title: values.title,
             description: values.description || null,
-            stage_id: values.stage_id,
-            subject_id: values.subject_id,
+            stage_id: primaryStageId,
+            subject_id: primarySubjectId,
+            stage_ids: selectedStageIds,
+            subject_ids: selectedSubjectIds,
             thumbnail_url: thumbPath,
             ...pricingPayload,
           })
@@ -255,8 +275,10 @@ const CourseInfoEditor = () => {
           .insert({
             title: values.title,
             description: values.description || null,
-            stage_id: values.stage_id,
-            subject_id: values.subject_id,
+            stage_id: primaryStageId,
+            subject_id: primarySubjectId,
+            stage_ids: selectedStageIds,
+            subject_ids: selectedSubjectIds,
             thumbnail_url: thumbPath,
             status: "draft",
             created_by: userRes.user?.id ?? null,
@@ -372,51 +394,67 @@ const CourseInfoEditor = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label>المرحلة الدراسية</Label>
-            <Select
-              value={stageVal}
-              onValueChange={(v) => setValue("stage_id", v, { shouldValidate: true })}
-              disabled={stages.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="اختر المرحلة" />
-              </SelectTrigger>
-              <SelectContent>
-                {stages.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
+            <Label className="flex items-center justify-between">
+              <span>المواد الدراسية (يمكن اختيار أكثر من مادة)</span>
+              <span className="text-xs text-muted-foreground">{selectedSubjectIds.length} مواد مختارة</span>
+            </Label>
+            <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-border bg-card">
+              {subjects.map((s) => {
+                const selected = selectedSubjectIds.includes(s.id);
+                return (
+                  <Badge
+                    key={s.id}
+                    variant={selected ? "default" : "outline"}
+                    className={`cursor-pointer gap-1.5 py-1.5 px-3 transition-all ${
+                      selected ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent"
+                    }`}
+                    onClick={() => {
+                      const next = selected
+                        ? selectedSubjectIds.filter((x) => x !== s.id)
+                        : [...selectedSubjectIds, s.id];
+                      setSelectedSubjectIds(next);
+                      setValue("subject_id", next.length > 0 ? next[0] : "", { shouldValidate: true });
+                    }}
+                  >
+                    {selected && <Check className="w-3.5 h-3.5" />}
                     {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.stage_id && (
-              <p className="text-xs text-destructive">{errors.stage_id.message}</p>
-            )}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label>المادة الدراسية</Label>
-            <Select
-              value={subjectVal}
-              onValueChange={(v) => setValue("subject_id", v, { shouldValidate: true })}
-              disabled={subjects.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="اختر المادة" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
+            <Label className="flex items-center justify-between">
+              <span>المراحل الدراسية (يمكن اختيار أكثر من مرحلة)</span>
+              <span className="text-xs text-muted-foreground">{selectedStageIds.length} مراحل مختارة</span>
+            </Label>
+            <div className="flex flex-wrap gap-2 p-3 rounded-lg border border-border bg-card">
+              {stages.map((s) => {
+                const selected = selectedStageIds.includes(s.id);
+                return (
+                  <Badge
+                    key={s.id}
+                    variant={selected ? "default" : "outline"}
+                    className={`cursor-pointer gap-1.5 py-1.5 px-3 transition-all ${
+                      selected ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-accent"
+                    }`}
+                    onClick={() => {
+                      const next = selected
+                        ? selectedStageIds.filter((x) => x !== s.id)
+                        : [...selectedStageIds, s.id];
+                      setSelectedStageIds(next);
+                      setValue("stage_id", next.length > 0 ? next[0] : "", { shouldValidate: true });
+                    }}
+                  >
+                    {selected && <Check className="w-3.5 h-3.5" />}
                     {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.subject_id && (
-              <p className="text-xs text-destructive">{errors.subject_id.message}</p>
-            )}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
         </div>
 

@@ -111,15 +111,23 @@ export function useCart() {
   }, [user?.id, load]);
 
   const addToCart = useCallback(
-    async (bookId: string, bookType: "digital" | "physical") => {
+    async (bookId: string, bookType: "digital" | "physical", stockQuantity?: number | null) => {
       if (!user) {
         toast.error("سجّل الدخول لإضافة الكتاب إلى السلة");
+        return false;
+      }
+      if (bookType === "physical" && stockQuantity !== undefined && stockQuantity !== null && stockQuantity <= 0) {
+        toast.error("عذراً، هذا الكتاب غير متوفر في المخزون حالياً");
         return false;
       }
       const existing = items.find((i) => i.book_id === bookId);
       if (existing) {
         if (bookType === "digital") {
           toast.info("هذا الكتاب موجود بالفعل في السلة");
+          return false;
+        }
+        if (stockQuantity !== undefined && stockQuantity !== null && existing.quantity >= stockQuantity) {
+          toast.error("عذراً، تم الوصول للكمية المتاحة بالمخزون");
           return false;
         }
         const { error } = await (supabase as any)
