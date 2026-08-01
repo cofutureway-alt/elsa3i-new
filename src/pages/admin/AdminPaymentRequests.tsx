@@ -48,6 +48,7 @@ function dateAr(iso: string) {
 export default function AdminPaymentRequests() {
   const [purposeFilter, setPurposeFilter] = useState<"all" | "course_purchase" | "wallet_topup">("all");
   const [statusFilter, setStatusFilter] = useState<"pending_review" | "success" | "failed" | "all">("pending_review");
+  const [gatewayFilter, setGatewayFilter] = useState<"all" | "manual" | "purchase_code">("all");
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [items, setItems] = useState<AdminPaymentRequest[] | null>(null);
@@ -75,9 +76,11 @@ export default function AdminPaymentRequests() {
     return items.filter((r) => {
       if (dateFrom && new Date(r.created_at) < new Date(dateFrom)) return false;
       if (dateTo && new Date(r.created_at) > new Date(dateTo + "T23:59:59")) return false;
+      if (gatewayFilter === "manual" && (r.gateway_display_name === "كود شراء" || r.reference_number.startsWith("CODE-"))) return false;
+      if (gatewayFilter === "purchase_code" && !(r.gateway_display_name === "كود شراء" || r.reference_number.startsWith("CODE-"))) return false;
       return true;
     });
-  }, [items, dateFrom, dateTo]);
+  }, [items, dateFrom, dateTo, gatewayFilter]);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -86,13 +89,40 @@ export default function AdminPaymentRequests() {
           <Inbox className="w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">طلبات الدفع</h1>
-          <p className="text-sm text-muted-foreground">مراجعة طلبات الدفع اليدوي — شراء دورات وشحن محافظ.</p>
+          <h1 className="text-2xl font-bold">طلبات وسجلات الدفع</h1>
+          <p className="text-sm text-muted-foreground">مراجعة ومتابعة جميع عمليات الدفع اليدوي وأكواد الشراء والتحويلات.</p>
         </div>
       </motion.div>
 
       {/* Filters */}
-      <div className="rounded-2xl border border-border bg-card p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="rounded-2xl border border-border bg-card p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div>
+          <Label className="text-xs">طريقة الدفع</Label>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {[
+              { v: "all", l: "الكل" },
+              { v: "manual", l: "دفع يدوي" },
+              { v: "purchase_code", l: "أكواد الشراء" },
+            ].map((g) => (
+              <button
+                key={g.v}
+                type="button"
+                onClick={() => {
+                  setGatewayFilter(g.v as any);
+                  if (g.v === "purchase_code" && statusFilter === "pending_review") {
+                    setStatusFilter("all");
+                  }
+                }}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all",
+                  gatewayFilter === g.v ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent",
+                )}
+              >
+                {g.l}
+              </button>
+            ))}
+          </div>
+        </div>
         <div>
           <Label className="text-xs">الحالة</Label>
           <div className="mt-1 flex flex-wrap gap-1">
@@ -102,7 +132,7 @@ export default function AdminPaymentRequests() {
                 type="button"
                 onClick={() => setStatusFilter(s)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
+                  "px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                   statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent",
                 )}
               >
@@ -124,7 +154,7 @@ export default function AdminPaymentRequests() {
                 type="button"
                 onClick={() => setPurposeFilter(o.v as any)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
+                  "px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                   purposeFilter === o.v ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-accent",
                 )}
               >
@@ -135,11 +165,11 @@ export default function AdminPaymentRequests() {
         </div>
         <div>
           <Label className="text-xs">من تاريخ</Label>
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="mt-1" />
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="mt-1 text-xs" />
         </div>
         <div>
           <Label className="text-xs">إلى تاريخ</Label>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="mt-1" />
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="mt-1 text-xs" />
         </div>
       </div>
 
