@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 220 40% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 40% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 40% 13%;
+    --primary: 220 60% 15%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 20% 94%;
+    --secondary-foreground: 220 40% 13%;
+    --muted: 220 15% 93%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 220 20% 90%;
+    --accent-foreground: 220 40% 13%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 220 60% 15%;
+    --radius: 0.75rem;
+    --gold: 43 90% 55%;
+    --silver: 220 10% 70%;
+    --bronze: 25 60% 50%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 210 40% 96%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 220 30% 14%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 220 30% 14%;
+    --muted-foreground: 215 20% 60%;
+    --accent: 220 30% 16%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 96%;
+    --border: 220 30% 16%;
+    --input: 220 30% 16%;
+    --ring: 210 40% 80%;
+    --gold: 43 90% 55%;
+    --silver: 220 10% 65%;
+    --bronze: 25 60% 45%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-tajawal;
+  }
+
+  @media (max-width: 767px) {
+    body {
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+    }
+  }
+}
+
+/* --- Lesson video player: block YouTube/Vimeo branding --- */
+/* Match motivia's .plyr-wrapper setup exactly:
+   overflow:hidden is CRITICAL — Plyr scales the YouTube iframe to 300% and offsets it
+   to clip the native YouTube control bar. overflow:hidden makes that scaling also clip
+   the YouTube logo/branding that renders in the iframe corners. */
+.plyr-shell {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.plyr-shell .plyr {
+  width: 100%;
+  height: 100%;
+}
+
+.plyr-shell .plyr--video {
+  height: 100%;
+}
+
+/* iframe always pointer-events:none so YT/Vimeo native UI cannot be interacted with */
+.plyr-shell .plyr__video-embed iframe {
+  pointer-events: none !important;
+}
+
+.plyr-shell .plyr--playing .plyr__video-embed iframe {
+  pointer-events: none !important;
+}
+
+/* Re-enable pointer events only on Plyr's own controls */
+.plyr-shell .plyr__controls {
+  pointer-events: auto;
+}
+
+.plyr-shell .plyr__control--overlaid {
+  pointer-events: auto;
+}
